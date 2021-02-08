@@ -14,11 +14,11 @@ class File extends Model
 
     use HasFactory;
 
-    public static function addFile(string $file_hash){
+    public static function addFile(string $fileHash, $userId){
 
         $newFile = new self();
-        //$newFile->user_id =
-        $newFile->file_hash=$file_hash;
+        $newFile->user_id = $userId;
+        $newFile->file_hash=$fileHash;
         $newFile->status = self::FILE_RECEIVED;
         $newFile->save();
 

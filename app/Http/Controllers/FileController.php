@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuthBasic as AuthBasicCheck;
 use Illuminate\Http\Request;
 use App\Models\File;
 use App\Helpers\Transport;
@@ -13,13 +14,18 @@ class FileController extends Controller
         $sault = 'MySault';
         $filename = $req->get('filename');
         $content = $req->get('content');
-        $file_hash = md5($filename . $content . $sault);
 
-        if (!File::where('file_hash', $file_hash)->first()) {
+        $getUser = AuthBasicCheck::authCheck($req->header('Authorization'));
+        if (!$getUser){
+            return response()->json(array('success' => false));
+        }
+        $fileHash = md5($filename . $getUser->id . $content . $sault);
 
-            $newFile = File::addFile($file_hash);
+        if (!File::where('file_hash', $fileHash)->first()) {
 
-            $isSaved = Transport::saveFile($file_hash, $content);
+            $newFile = File::addFile($fileHash, $getUser->id);
+
+            $isSaved = Transport::saveFile($fileHash, $content);
             if ($isSaved === false) {
                 $newFile->status = File::FILE_ERROR;
             } else {
@@ -27,7 +33,7 @@ class FileController extends Controller
             }
             $newFile->save();
         }else{
-            $newFile = File::where('file_hash', $file_hash)->first();
+            $newFile = File::where('file_hash', $fileHash)->first();
         }
         return response()->json(array('success' => true, 'status' => $newFile->status, 'id' => $newFile->file_hash));
 
