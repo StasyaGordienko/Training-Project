@@ -4,44 +4,43 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\File;
+use App\Helpers\Transport;
 
 class FileController extends Controller
 {
     public function receiveFile(Request $req)
     {
         $sault = 'MySault';
-        $data = $req->all();
-        $file_hash = sha1(md5($data['filename'] . $data['content'] . $sault));
+        $filename = $req->get('filename');
+        $content = $req->get('content');
+        $file_hash = md5($filename . $content . $sault);
 
         if (!File::where('file_hash', $file_hash)->first()) {
 
-            $new_file = new File();
-            $new_file->file_hash=$file_hash;
-            $new_file->status = 'received';
-            $new_file->deleted_at = '0000-01-01';
-            $new_file->save();
+            $newFile = File::addFile($file_hash);
 
-            $is_saved = file_put_contents($file_hash, $data['content']);
-            if ($is_saved === false) {
-                $new_file->status = 'error';
+            $isSaved = Transport::saveFile($file_hash, $content);
+            if ($isSaved === false) {
+                $newFile->status = File::FILE_ERROR;
             } else {
-                $new_file->status = 'sent';
+                $newFile->status = File::FILE_SENT;
             }
-            $new_file->save();
+            $newFile->save();
         }else{
-            $new_file = File::where('file_hash', $file_hash)->first();
+            $newFile = File::where('file_hash', $file_hash)->first();
         }
-        return response()->json(array('success' => true, 'status' => $new_file->status, 'id' => $new_file->id));
+        return response()->json(array('success' => true, 'status' => $newFile->status, 'id' => $newFile->file_hash));
 
 
     }
 
     public function getFileInfo(Request $req)
     {
-        if (!File::find($req->all()['id'])) {
+        $fileHash = $req->get('id');
+        if (!File::where('file_hash', $fileHash)->first()) {
             $result = array('success' => false);
         }else{
-            $file = File::find($req->all()['id']);
+            $file = File::where('file_hash', $fileHash)->first();
 
             $result = array('success' => true, 'status' => $file->status);
         }
@@ -51,17 +50,21 @@ class FileController extends Controller
 
     public function deleteFile(Request $req)
     {
-        if (!File::find($req->all()['id'])) {
+        $fileHash = $req->get('id');
+        if (!File::where('file_hash', $fileHash)->first()) {
             $result = array('success' => false);
         }else{
-            $file = File::find($req->all()['id']);
-            if ($file->status !='deleted') {
+            $file = File::where('file_hash', $fileHash)->first();
+            if ($file->status != File::FILE_DEL) {
 
-                if (file_exists($file->file_hash)){
-                    unlink($file->file_hash);
+                $isDeleted = Transport::deleteFile($file->file_hash);
+
+                if ($isDeleted) {
+                    $file->status = File::FILE_DEL;
+                    $file->deleted_at = date("Y-m-d H:i:s");
+                }else{
+                    $file->status = File::FILE_ERROR;
                 }
-                $file->status = 'deleted';
-                $file->deleted_at = date("Y-m-d H:i:s");
                 $file->save();
 
                 $result = array('success' => true, 'status' => $file->status);
