@@ -3,8 +3,9 @@
 namespace App\Helpers;
 
 use App\Models\FileQueue;
+use Illuminate\Support\Facades\Log;
 
-class Transport{
+class Transport implements TransportInterface {
 
     const PATH_DIR = '/storage/logs/files/';
 
@@ -12,20 +13,20 @@ class Transport{
     public static function sendFile(FileQueue $fileQueue):bool
     {
         $filePath = dirname(__DIR__ , 2) . self::PATH_DIR;
+
         if (!is_dir($filePath) && !mkdir($filePath)) {
 
-            throw new \Exception("Cannot write to the directory {$filePath}");
-        }
+            Log::channel('authlog')->debug('Wrong directory', ['filePath' => $filePath]);
 
-        return (bool)file_put_contents($filePath . $fileQueue->file_hash, $fileQueue->content);
+            throw new \Exception("Cannot write to the directory " . $filePath);
+
+        }
+        return (bool)file_put_contents($filePath . $fileQueue->file_id, $fileQueue->content);
     }
 
-    /**
-     * @param string $fileHash
-     * @return bool
-     */
 
-    public static function deleteFile(string $fileHash){
+    public static function deleteFile(string $fileHash):bool
+    {
 
         $isDeleted = false;
         $filePath = dirname(__DIR__ , 2) . self::PATH_DIR;

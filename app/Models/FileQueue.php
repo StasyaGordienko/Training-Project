@@ -13,22 +13,19 @@ class FileQueue extends Model
     const STATUS_PROCESSING = 'processing';
 
     protected $table = 'file_queue';
+    protected $guarded = [];
 
-    /**
-     * @param $fileHash
-     * @param $content
-     * @param $delay
-     * @return FileQueue
-     */
-    public static function addFileToQueue($fileHash, $content, $delay){
-
-        $fileToQueue = new self();
-        $fileToQueue->file_id = $fileHash;
-        $fileToQueue->content = $content;
-        $fileToQueue->delay = $delay;
+    public static function addFileToQueue(string $fileHash, string $content, int $delay):self
+    {
+        $fileToQueue = FileQueue::create([
+            'file_id' => $fileHash,
+            'content' => $content,
+            'delay' => $delay
+        ]);
         $fileToQueue->save();
 
         return $fileToQueue;
 
     }
+
 }

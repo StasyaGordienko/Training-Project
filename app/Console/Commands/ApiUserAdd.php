@@ -57,5 +57,6 @@ class ApiUserAdd extends Command
         }
 
         User::addUser($username, $password);
+        return 0;
     }
 }

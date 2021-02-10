@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware([\App\Http\Middleware\AuthBasic::class])->group(function () {
     Route::post('/file', 'App\Http\Controllers\FileController@receiveFile');
 
-    Route::get('/file', 'App\Http\Controllers\FileController@getFileInfo');
+    Route::get('/file', 'App\Http\Controllers\FileController@getFile');
 
     Route::delete('/file', 'App\Http\Controllers\FileController@deleteFile');
 });

@@ -29,18 +29,17 @@ class File extends Model
     const STATUS_DEL = "deleted";
     const STATUS_ERROR = "error";
 
+    protected $guarded = [];
+    //protected $fillable = ['name'];
 
     public static function addFile(string $fileHash, int $userId):self
     {
 
-        $newFile = app()->make('App\Models\File', [
+        $newFile = File::create([
             "user_id" => $userId,
             "file_hash" => $fileHash,
             "status" => self::STATUS_RECEIVED
         ]);
-        $newFile->user_id = $userId;
-        $newFile->file_hash = $userId;
-        $newFile->user_id = $userId;
 
         $newFile->save();
 

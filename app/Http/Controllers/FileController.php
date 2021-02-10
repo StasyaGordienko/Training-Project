@@ -11,13 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 class FileController extends Controller
 {
-    /**
-     * @param Request $req
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function receiveFile(Request $req)
+
+    public function receiveFile(Request $req): \Illuminate\Http\JsonResponse
     {
-        Log::debug('Enter');
         $sault = 'MySault';
         $filename = $req->get('filename');
         $content = $req->get('content');
@@ -37,22 +33,19 @@ class FileController extends Controller
 
                 $delay = 0;
                 }
+
             FileQueue::addFileToQueue($fileHash, $content, $delay);
 
-            $newFile->save();
+            return response()->json(array('success' => true, 'status' => $newFile->status, 'id' => $newFile->file_hash));
         }else{
-            $newFile = File::where('file_hash', $fileHash)->first();
+            //$newFile = File::where('file_hash', $fileHash)->first();
+            //TODO
+            return response()->json(array('success' => false));
         }
-        return response()->json(array('success' => true, 'status' => $newFile->status, 'id' => $newFile->file_hash));
-
-
     }
 
-    /**
-     * @param Request $req
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getFileInfo(Request $req)
+
+    public function getFile(Request $req): \Illuminate\Http\JsonResponse
     {
         $fileHash = $req->get('id');
         if (!File::where('file_hash', $fileHash)->first()) {
@@ -66,11 +59,8 @@ class FileController extends Controller
         return response()->json($result);
     }
 
-    /**
-     * @param Request $req
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function deleteFile(Request $req)
+
+    public function deleteFile(Request $req): \Illuminate\Http\JsonResponse
     {
         $fileHash = $req->get('id');
         if (!File::where('file_hash', $fileHash)->first()) {

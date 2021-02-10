@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\File;
 use App\Models\FileQueue;
 use App\Helpers\Transport;
 use Illuminate\Console\Command;
@@ -41,7 +42,7 @@ class SaveFile extends Command
      */
     public function handle()
     {
-        //Log::debug('hhblh', ['1'=>'kjdnc']);
+        Log::debug('SaveFile');
         $filesBuilder = FileQueue::query()
             ->where('delay', '<=', DB::raw('timestampdiff(minute,created_at,now())'));
 
@@ -56,9 +57,21 @@ class SaveFile extends Command
                 if (!$readyForSend) {
                     return false;
                 }
-                Transport::sendFile($fileQueue);
-                $fileQueue->delete();
+                $isSent = Transport::sendFile($fileQueue);
+                if ($isSent){
+                    $fileQueue->delete();
 
+                    $getFile = File::query()->where('file_hash', '=', $fileQueue->file_id)->first();
+                    if ($getFile) {
+                        $getFile->status = File::STATUS_SENT;
+                        $getFile->save();
+                    }
+                }else{
+                    FileQueue::query()
+                        ->where('id',$fileQueue->id)
+                        ->where('status', FileQueue::STATUS_PROCESSING)
+                        ->update(['status' => FileQueue::STATUS_NEW]);
+                }
             }
         });
 
