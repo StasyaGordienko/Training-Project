@@ -3,13 +3,16 @@
 namespace App\Helpers;
 
 use App\Models\Api\User;
+use Illuminate\Support\Facades\Log;
 
 class AuthBasic{
     /**
-     *
+     * @param $authHeader
+     * @return User|false
      */
 
-    public static function authCheck($authHeader){
+    public static function authCheck($authHeader)
+    {
 
         $authLine = base64_decode($authHeader, true);
 

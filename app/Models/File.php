@@ -2,24 +2,46 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Class File
+ * @package App\Models
+ *
+ * @property integer $id
+ * @property integer user_id
+ * @property string file_hash
+ * @property string $status
+ * @property Carbon $deleted_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ */
 class File extends Model
 {
-    const FILE_RECEIVED = "received";
-    const FILE_SENT = "sent";
-    const FILE_DEL = "deleted";
-    const FILE_ERROR = "error";
-
     use HasFactory;
+    use SoftDeletes;
 
-    public static function addFile(string $fileHash, $userId){
+    const STATUS_RECEIVED = "received";
+    const STATUS_SENT = "sent";
+    const STATUS_DEL = "deleted";
+    const STATUS_ERROR = "error";
 
-        $newFile = new self();
+
+    public static function addFile(string $fileHash, int $userId):self
+    {
+
+        $newFile = app()->make('App\Models\File', [
+            "user_id" => $userId,
+            "file_hash" => $fileHash,
+            "status" => self::STATUS_RECEIVED
+        ]);
         $newFile->user_id = $userId;
-        $newFile->file_hash=$fileHash;
-        $newFile->status = self::FILE_RECEIVED;
+        $newFile->file_hash = $userId;
+        $newFile->user_id = $userId;
+
         $newFile->save();
 
         return $newFile;
