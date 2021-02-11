@@ -105,6 +105,12 @@ return [
             'path' => storage_path('logs/authlog.log'),
             'level' => env('LOG_LEVEL', 'debug'),
         ],
+
+        'filelog' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/filelog.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
     ],
 
 ];

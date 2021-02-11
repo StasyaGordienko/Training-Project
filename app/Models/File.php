@@ -30,7 +30,6 @@ class File extends Model
     const STATUS_ERROR = "error";
 
     protected $guarded = [];
-    //protected $fillable = ['name'];
 
     public static function addFile(string $fileHash, int $userId):self
     {

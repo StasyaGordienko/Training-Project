@@ -35,14 +35,8 @@ class SaveFile extends Command
         parent::__construct();
     }
 
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
+    public function handle():int
     {
-        Log::debug('SaveFile');
         $filesBuilder = FileQueue::query()
             ->where('delay', '<=', DB::raw('timestampdiff(minute,created_at,now())'));
 
@@ -50,7 +44,7 @@ class SaveFile extends Command
             foreach ($fileQueueCollection as $fileQueue) {
 
                 $readyForSend = FileQueue::query()
-                    ->where('id',$fileQueue->id)
+                    ->where('id', $fileQueue->id)
                     ->where('status', FileQueue::STATUS_NEW)
                     ->update(['status' => FileQueue::STATUS_PROCESSING]);
 
@@ -58,19 +52,25 @@ class SaveFile extends Command
                     return false;
                 }
                 $isSent = Transport::sendFile($fileQueue);
-                if ($isSent){
+                if ($isSent) {
                     $fileQueue->delete();
 
                     $getFile = File::query()->where('file_hash', '=', $fileQueue->file_id)->first();
                     if ($getFile) {
                         $getFile->status = File::STATUS_SENT;
                         $getFile->save();
+                    }else{
+                        Log::channel('filelog')
+                            ->debug('File status wasn\'t changed', ['file_hash' => '$fileQueue->id']);
                     }
-                }else{
+                } else {
                     FileQueue::query()
-                        ->where('id',$fileQueue->id)
+                        ->where('id', $fileQueue->id)
                         ->where('status', FileQueue::STATUS_PROCESSING)
                         ->update(['status' => FileQueue::STATUS_NEW]);
+
+                    Log::channel('filelog')
+                        ->debug('File wasn\'t sent to FTP', ['id' => '$fileQueue->id']);
                 }
             }
         });

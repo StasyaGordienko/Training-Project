@@ -13,9 +13,6 @@ class User extends Model
     protected $table = 'api_users';
     protected $guarded = [];
 
-    /**
-     * @param null $lastRequestAt
-     */
     public static function addUser(string $username, string $password, int $requestCount = 0, $lastRequestAt = null): self
     {
 

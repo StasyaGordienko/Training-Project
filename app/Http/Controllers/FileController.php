@@ -19,27 +19,35 @@ class FileController extends Controller
         $content = $req->get('content');
         $delay = $req->get('delay');
 
-        $getUser = AuthBasicCheck::authCheck($req->header('Authorization'));
-        if (!$getUser){
-            return response()->json(array('success' => false));
-        }
-        $fileHash = md5($filename . $getUser->id . $content . $sault);
+        if ($req->header('Authorization')) {
+            $getUser = AuthBasicCheck::authCheck($req->header('Authorization'));
 
-        if (!File::where('file_hash', $fileHash)->first()) {
+            if (!$getUser) {
+                return response()->json(array('success' => false));
+            }
+            $fileHash = md5($filename . $getUser->id . $content . $sault);
 
-            $newFile = File::addFile($fileHash, $getUser->id);
+            if (!File::where('file_hash', $fileHash)->first()) {
 
-            if (!$delay) {
+                $newFile = File::addFile($fileHash, $getUser->id);
 
-                $delay = 0;
+                if (!$delay) {
+                    $delay = 0;
                 }
 
-            FileQueue::addFileToQueue($fileHash, $content, $delay);
+                FileQueue::addFileToQueue($fileHash, $content, $delay);
 
-            return response()->json(array('success' => true, 'status' => $newFile->status, 'id' => $newFile->file_hash));
-        }else{
-            //$newFile = File::where('file_hash', $fileHash)->first();
-            //TODO
+                return response()->json(array('success' => true,
+                    'status' => $newFile->status,
+                    'id' => $newFile->file_hash));
+            } else {
+                Log::channel('filelog')
+                    ->debug('Cannot add a new file because it already exists');
+                return response()->json(array('success' => false));
+            }
+        } else {
+            Log::channel('authlog')
+                ->debug('Authentication failed: there is no authorization information');
             return response()->json(array('success' => false));
         }
     }
@@ -49,8 +57,12 @@ class FileController extends Controller
     {
         $fileHash = $req->get('id');
         if (!File::where('file_hash', $fileHash)->first()) {
+
+            Log::channel('filelog')
+                ->debug('File wasn\'t found', ['file_hash' => $fileHash]);
+
             $result = array('success' => false);
-        }else{
+        } else {
             $file = File::where('file_hash', $fileHash)->first();
 
             $result = array('success' => true, 'status' => $file->status);
@@ -64,8 +76,11 @@ class FileController extends Controller
     {
         $fileHash = $req->get('id');
         if (!File::where('file_hash', $fileHash)->first()) {
+
+            Log::channel('filelog')
+                ->debug('File wasn\'t found', ['file_hash' => $fileHash]);
             $result = array('success' => false);
-        }else{
+        } else {
             $file = File::where('file_hash', $fileHash)->first();
             if ($file->status != File::STATUS_DEL) {
 
@@ -74,13 +89,13 @@ class FileController extends Controller
                 if ($isDeleted) {
                     $file->status = File::STATUS_DEL;
                     $file->deleted_at = date("Y-m-d H:i:s");
-                }else{
+                } else {
                     $file->status = File::STATUS_ERROR;
                 }
                 $file->save();
 
                 $result = array('success' => true, 'status' => $file->status);
-            }else{
+            } else {
                 $result = array('success' => true, 'status' => $file->status);
             }
         }
