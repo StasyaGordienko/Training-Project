@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Api\User;
+use Illuminate\Support\Facades\Cache;
 use function GuzzleHttp\Psr7\str;
 use function PHPUnit\Framework\isEmpty;
 
@@ -56,7 +57,8 @@ class ApiUserAdd extends Command
             }
         }
 
-        User::addUser($username, $password);
+        $newUser = User::addUser($username, $password);
+        Cache::store('database')->put($newUser->username, md5($newUser->password), 600);
         return 0;
     }
 }

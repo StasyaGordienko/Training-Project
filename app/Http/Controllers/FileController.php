@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuthBasic as AuthBasicCheck;
+use App\Jobs\ProcessSendingFiles;
+use App\Models\Api\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\File;
 use App\Models\FileQueue;
@@ -20,22 +23,26 @@ class FileController extends Controller
         $delay = $req->get('delay');
 
         if ($req->header('Authorization')) {
-            $getUser = AuthBasicCheck::authCheck($req->header('Authorization'));
 
-            if (!$getUser) {
+            $getUserName = AuthBasicCheck::authCheck($req->header('Authorization'));
+
+            if (!$getUserName) {
                 return response()->json(array('success' => false));
             }
-            $fileHash = md5($filename . $getUser->id . $content . $sault);
+            $fileHash = md5($filename . $getUserName . $content . $sault);
 
             if (!File::where('file_hash', $fileHash)->first()) {
 
+                $getUser = User::query()->where('username','=', $getUserName)->first();
                 $newFile = File::addFile($fileHash, $getUser->id);
 
                 if (!$delay) {
                     $delay = 0;
                 }
 
-                FileQueue::addFileToQueue($fileHash, $content, $delay);
+                ProcessSendingFiles::dispatch($newFile, $content)
+                    ->onConnection('database')
+                    ->delay(Carbon::now()->addMinutes($delay));
 
                 return response()->json(array('success' => true,
                     'status' => $newFile->status,

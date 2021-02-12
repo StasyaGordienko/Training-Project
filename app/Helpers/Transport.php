@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-use App\Models\FileQueue;
+use App\Models\File;
 use Illuminate\Support\Facades\Log;
 
 class Transport implements TransportInterface {
@@ -10,7 +10,7 @@ class Transport implements TransportInterface {
     const PATH_DIR = '/storage/logs/files/';
 
 
-    public static function sendFile(FileQueue $fileQueue):bool
+    public static function sendFile(File $file, string $content):bool
     {
         $filePath = dirname(__DIR__ , 2) . self::PATH_DIR;
 
@@ -21,7 +21,8 @@ class Transport implements TransportInterface {
             throw new \Exception("Cannot write to the directory " . $filePath);
 
         }
-        return (bool)file_put_contents($filePath . $fileQueue->file_id, $fileQueue->content);
+       // return (bool)file_put_contents($filePath . $file->file_hash, $file->content);
+        return (bool)file_put_contents($filePath . $file->file_hash, $content);
     }
 
 

@@ -61,7 +61,7 @@ class SaveFile extends Command
                         $getFile->save();
                     }else{
                         Log::channel('filelog')
-                            ->debug('File status wasn\'t changed', ['file_hash' => '$fileQueue->id']);
+                            ->debug('File status wasn\'t changed', ['file_hash' => $fileQueue->id]);
                     }
                 } else {
                     FileQueue::query()
@@ -70,7 +70,7 @@ class SaveFile extends Command
                         ->update(['status' => FileQueue::STATUS_NEW]);
 
                     Log::channel('filelog')
-                        ->debug('File wasn\'t sent to FTP', ['id' => '$fileQueue->id']);
+                        ->debug('File wasn\'t sent to FTP', ['id' => $fileQueue->id]);
                 }
             }
         });
